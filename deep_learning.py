@@ -102,9 +102,64 @@ def one_hot(batch_label, class_num):            # label 是batch  class_num 是�
     return out_label
 
 
+def Sign(x):
+    if x < 0:
+        return -1
+    else:
+        return 1
+
+
+def Sign_derivative(x):
+    if abs(x) > 1:
+        return 0
+    else:
+        return 1
+
+
 def hard_sigmoid(x):
-    p = max(0, min(1, (x + 1)/2))
-    if p > 0.5:
+    return max(0, min(1, (x + 1)/2))
+
+
+def hard_sigmoid_derivative(x):
+    if abs(x) <= 1:
+        return 1./2
+    else:
+        return 0
+
+
+def hard_tanh(x):
+    return max(-1, min(1, x))   # 2*hard_sigmoid(x) - 1
+
+
+def hard_tanh_derivative(x):
+    if abs(x) <= 1:
         return 1
     else:
-        return -1
+        return 0
+
+
+def bin_function(x):   # 输入x可以是一维、二维、三维
+    x = np.array(x)
+    shape = len(x.shape)
+    assert shape < 4
+    output = np.ones_like(x)
+    dim_1 = x.shape[0]
+    if shape == 1:
+        for ii in range(dim_1):
+            if hard_sigmoid(x[ii]) < 0.5:
+                output[ii] = -1
+    if shape == 2:
+        dim_2 = x.shape[1]
+        for ii in range(dim_1):
+            for jj in range(dim_2):
+                if hard_sigmoid(x[ii, jj]) < 0.5:
+                    output[ii, jj] = -1
+    elif shape == 3:
+        dim_2 = x.shape[1]
+        dim_3 = x.shape[2]
+        for ii in range(dim_1):
+            for jj in range(dim_2):
+                for kk in range(dim_3):
+                    if hard_sigmoid(x[ii, jj, kk]) < 0.5:
+                        output[ii, jj, kk] = -1
+    return output

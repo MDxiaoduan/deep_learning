@@ -27,3 +27,12 @@ def shuffle_matrix(A, order=None):   # A is numpy matrix
         for kk in range(x):
             B[kk, :] = A[order[kk], :]
     return B, order
+
+
+def list_save(content, filename, mode='a'):
+    # Try to save a list  into txt file.
+    # content:list  filename:path and txt name to save as txt such as : "list.txt"
+    file = open(filename, mode)   # filename could existence or not
+    for i in range(len(content)):
+        file.write(str(content[i]))
+    file.close()

@@ -2,11 +2,29 @@ from __future__ import division        # for 1/2=0.5
 import numpy as np
 
 
-def Batch_Normalization(batch_data, gama=1, beta=0):
+def Batch_Normalization(batch_data, gamma=1, beta=0):
     mean = np.mean(batch_data)
     std = np.std(batch_data)
     batch_norm_data = (batch_data - mean) / std
-    return gama*batch_norm_data + beta
+    return gamma*batch_norm_data + beta
+
+
+def Batch_Normalization_derivative(batch_data, gamma, beta, der):   # der 是上层求得的二维矩阵残差  输入x也是一个矩阵
+    dim_1 = batch_data.shape[0]
+    dim_2 = batch_data.shape[1]
+    m = dim_1*dim_2
+    epo = 10**(-6)
+    mean = np.mean(batch_data)
+    std = np.std(batch_data)
+    var = std**2
+    batch_norm_data = (batch_data - mean) / std
+    der_gamma = sum(sum(batch_norm_data*der))
+    der_beta = sum(sum(der))
+    der_var = gamma * (-0.5) * (var ** (-(3 / 2))) * sum(sum(der * (batch_data - mean)))
+    der_batch_norm_data = der * gamma
+    der_mean = sum(sum(der_batch_norm_data)) * (-1) / np.sqrt(var + epo) + der_var * (-2 / m) * sum(sum(batch_data - mean))
+    der_batch_data = der_batch_norm_data*(1/np.sqrt(var + epo)) + der_var*(2/m)*(batch_data - mean) + der_mean*(1/m)
+    return der_gamma, der_beta, der_batch_data
 
 
 def convolve(image, kernel):       # image, kernel 都是二维矩阵(不一定是正方形)  stride = 1
@@ -43,7 +61,7 @@ def ReLu_derivative(x):        # ReLu(x)的导数
         return 1
 
 
-def pooling(image, p_size, stride):                      # 最好是简单的可以整除
+def ave_pooling(image, p_size, stride):         # 最好是简单的可以整除  p_size =[2, 2] stride = 2
     (iH, iW) = image.shape[:2]
     (kH, kW) = p_size
     out = np.zeros((int(iH/stride), int(iW/stride)))     # 输入输出的大小关系
@@ -51,6 +69,16 @@ def pooling(image, p_size, stride):                      # 最好是简单的可
         for jj in range(0, iW, stride):                 # 相当于和np.ones((2,2))做卷积
             out[int(ii/stride), int(jj/stride)] = image[ii:(ii+kH), jj:(jj+kW)].sum()
     return out/4
+
+
+def max_pooling(image, p_size, stride):
+    (iH, iW) = image.shape[:2]
+    (kH, kW) = p_size
+    out = np.zeros((int(iH/stride), int(iW/stride)))     # 输入输出的大小关系
+    for ii in range(0, iH, stride):
+        for jj in range(0, iW, stride):                 # 相当于和np.ones((2,2))做卷积
+            out[int(ii/stride), int(jj/stride)] = np.amax(image[ii:(ii+kH), jj:(jj+kW)])
+    return out
 
 
 def expand(inputs, stride):  # 二维矩阵
@@ -71,7 +99,7 @@ def deconvolution(image, weight):    # 残差和卷积核得到上一层残差  
     return out
 
 
-def learning_rate(kk, name):
+def learning_rate(kk, name, lr, epochs):
     if name == "exp":       # 这里必须用==不能用is
         return 0.0001 + (1 - 0.0001) * np.exp(-kk / 100)
     elif name == "my":
@@ -85,12 +113,12 @@ def learning_rate(kk, name):
             return 0.001
         else:
             return 0.0001
-    elif name == "0.01":
-        return 0.01
-    elif name == "0.001":
-        return 0.001
-    elif name == "0.0001":
-        return 0.0001
+    elif name == "epochs":
+        if kk % (5*epochs) == 0:
+            lr /= 10
+            return lr
+        else:
+            return lr
 
 
 def one_hot(batch_label, class_num):            # label 是batch  class_num 是分类数  输出one_hot的label
@@ -128,14 +156,45 @@ def hard_sigmoid_derivative(x):
 
 
 def hard_tanh(x):
-    return max(-1, min(1, x))   # 2*hard_sigmoid(x) - 1
+    x = np.array(x)
+    shape = len(x.shape)
+    assert shape < 3
+    out = np.zeros_like(x)
+    if shape == 1:
+        dim_1 = x.shape[0]
+        for ii in range(dim_1):
+            out[ii] = max(-1, min(1, x[ii]))
+    if shape == 2:
+        dim_1 = x.shape[0]
+        dim_2 = x.shape[1]
+        for ii in range(dim_1):
+            for jj in range(dim_2):
+                out[ii, jj] = max(-1, min(1, x[ii, jj]))
+    return out   # 2*hard_sigmoid(x) - 1
 
 
 def hard_tanh_derivative(x):
-    if abs(x) <= 1:
-        return 1
-    else:
-        return 0
+    x = np.array(x)
+    shape = len(x.shape)
+    assert shape < 4
+    out = np.zeros_like(x)
+    if shape == 1:
+        if abs(x) <= 1:
+            return 1
+        else:
+            return 0
+    if shape == 3:
+        dim_1 = x.shape[0]
+        dim_2 = x.shape[1]
+        dim_3 = x.shape[2]
+        for ii in range(dim_1):
+            for jj in range(dim_2):
+                for kk in range(dim_3):
+                    if abs(x[ii, jj, kk]) <= 1:
+                        out[ii, jj, kk] = 1
+                    else:
+                        out[ii, jj, kk] = 0
+        return out
 
 
 def bin_function(x):   # 输入x可以是一维、二维、三维
@@ -163,3 +222,26 @@ def bin_function(x):   # 输入x可以是一维、二维、三维
                     if hard_sigmoid(x[ii, jj, kk]) < 0.5:
                         output[ii, jj, kk] = -1
     return output
+
+
+def Binary_weight(x):     # x是二维矩阵
+    n_1 = x.shape[0]
+    n_2 = x.shape[1]
+    # print(n_1, n_2)
+    B_new = np.zeros_like(x)
+    alpha = 0
+    for ii in range(n_1):
+        for jj in range(n_2):
+            B_new[ii, jj] = Sign(x[ii, jj])
+            alpha += abs(x[ii, jj])
+    alpha = alpha/(n_1*n_2)
+    return alpha, B_new
+
+
+def Softmax(x):
+    sum_exp = 0
+    for t in x:
+        sum_exp += np.exp(t)
+    return [np.exp(f)/sum_exp for f in x]
+
+

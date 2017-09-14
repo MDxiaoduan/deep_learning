@@ -245,3 +245,8 @@ def Softmax(x):
     return [np.exp(f)/sum_exp for f in x]
 
 
+def Leaky_ReLu(x):
+    if x < 0:
+        return 0.001*x
+    else:
+        return x

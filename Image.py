@@ -60,4 +60,3 @@ def plot_images(images, labels, show_color=None):
         plt.subplots_adjust(top=1.5)
         plt.imshow(images[i], cmap=show_color)
     plt.show()
-

@@ -1,6 +1,6 @@
 import numpy as np
 import random
-
+from math import *
 
 #  归一化
 def Norm(vec):  # 默认变量值None!!
@@ -15,16 +15,16 @@ def Norm(vec):  # 默认变量值None!!
 
 # 按行打乱矩阵
 def shuffle_matrix(A, order=None):   # A is numpy matrix
-    x, y = A.shape
-    B = np.zeros((x, y))
+    row, col = A.shape
+    B = np.zeros((row, col))
     if order is None:
-        li = [i for i in range(x)]
+        li = [i for i in range(row)]
         random.shuffle(li)
-        for kk in range(x):
+        for kk in range(row):
             B[kk, :] = A[li[kk], :]
         order = li
     else:
-        for kk in range(x):
+        for kk in range(row):
             B[kk, :] = A[order[kk], :]
     return B, order
 
@@ -36,3 +36,21 @@ def list_save(content, filename, mode='a'):
     for i in range(len(content)):
         file.write(str(content[i]))
     file.close()
+
+
+def Bin_img(x):
+    if x < 0:
+        return -1
+    else:
+        return 1
+
+
+def XNOR(A, B):  # 同或：相同为1 不同为0
+    if A == B:
+        return 1
+    else:
+        return 0
+
+
+def Gaussian(x, mu=0, sigma2=1):    # sigma2:方差
+    return 1./sqrt(2.*pi*sigma2)*exp(-.5*(x-mu)**2/sigma2)

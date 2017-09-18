@@ -2,6 +2,7 @@ import numpy as np
 import random
 from math import *
 
+
 #  归一化
 def Norm(vec):  # 默认变量值None!!
     if np.amax(vec) == np.min(vec):
@@ -54,3 +55,20 @@ def XNOR(A, B):  # 同或：相同为1 不同为0
 
 def Gaussian(x, mu=0, sigma2=1):    # sigma2:方差
     return 1./sqrt(2.*pi*sigma2)*exp(-.5*(x-mu)**2/sigma2)
+
+
+def find_same(vec):         # 找到向量中两个相同的元素的位置
+    for index1, m in enumerate(vec):
+        for index2, n in enumerate(vec):
+            if m == n and index1 != index2:
+                return index1, index2
+            else:
+                continue
+    return None
+
+
+def find_near(x, vec):   # 找到vec中和x最近的数
+    diff = []
+    for tx in vec:
+        diff.append(abs(tx - x))
+    return vec[np.argmin(diff)]

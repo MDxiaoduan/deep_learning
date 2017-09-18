@@ -1,6 +1,7 @@
 import tensorflow as tf
 import math
 
+
 # 定义卷积，卷积后尺寸不变
 def conv(img, weight, biases, offset, scale, strides=1):
     conv_conv = tf.nn.conv2d(img, weight, strides=[1, strides, strides, 1], padding='SAME') + biases
@@ -79,3 +80,4 @@ def XNOR_Active(img, weight, strides=1):   # img [batch_size, w, h, channel]
     K = tf.nn.conv2d(tf.expand_dims(A, 3), tf.expand_dims(tf.expand_dims(k_weight, 2), 3), strides=[1, strides, strides, 1], padding="SAME")
     I = tf.sign(img)
     return I, K  # [batch_size, w_in, h_in, in_channel], [batch_size, w_in, h_in, 1]
+

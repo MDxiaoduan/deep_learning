@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import os
+
 from math import *
 
 
@@ -33,7 +35,9 @@ def shuffle_matrix(A, order=None):   # A is numpy matrix
 def list_save(content, filename, mode='a'):
     # Try to save a list  into txt file.
     # content:list  filename:path and txt name to save as txt such as : "list.txt"
-    file = open(filename, mode)   # filename could existence or not
+    if os.path.exists(filename):   # filename could existence or not but i will remove it haha
+        os.remove(filename)
+    file = open(filename, mode)
     for i in range(len(content)):
         file.write(str(content[i]))
     file.close()

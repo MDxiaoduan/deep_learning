@@ -4,7 +4,8 @@ import numpy as np
 
 def Batch_Normalization(batch_data, gamma=1, beta=0):
     mean = np.mean(batch_data)
-    std = np.std(batch_data)
+    # Use adjusted standard deviation here, in case the std == 0.
+    std = np.max([np.std(batch_data), 1.0/np.sqrt(batch_data.shape[1]*batch_data.shape[2]*batch_data.shape[3])])
     batch_norm_data = (batch_data - mean) / std
     return gamma*batch_norm_data + beta
 
@@ -114,8 +115,8 @@ def learning_rate(kk, name, lr, epochs):
         else:
             return 0.0001
     elif name == "epochs":
-        if kk % (5*epochs) == 0:
-            lr /= 10
+        if kk % (4*epochs) == 0:
+            lr /= 2
             return lr
         else:
             return lr
@@ -250,3 +251,12 @@ def Leaky_ReLu(x):
         return 0.001*x
     else:
         return x
+
+
+def Data_augmentation(x):     # x 是标准输入：[batch_size, weight, height, depth]
+    data_out = np.zeros_like(x)
+    for ii in range(x.shape[0]):
+        rot = np.random.randint(4)    # 旋转一定角度
+        for jj in range(x.shape[3]):
+            data_out[ii, :, :, jj] = np.rot90(x[ii, :, :, jj], rot)
+    return data_out

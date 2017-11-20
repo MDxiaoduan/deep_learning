@@ -2,17 +2,42 @@ import tensorflow as tf
 import math
 
 
+def Batch_Normalization(in_img, dimension):
+    offset = tf.get_variable('offset', [dimension], initializer=tf.constant_initializer(0.0, tf.float32))
+    scale = tf.get_variable('scale', [dimension], initializer=tf.constant_initializer(1.0, tf.float32))
+    mean, variance = tf.nn.moments(in_img, [0, 1, 2])
+    img = tf.nn.batch_normalization(in_img, mean, variance, offset, scale, 0.001)
+    return img
+
+
 # 定义卷积，卷积后尺寸不变
-def conv(img, weight, biases, offset, scale, strides=1):
-    conv_conv = tf.nn.conv2d(img, weight, strides=[1, strides, strides, 1], padding='SAME') + biases
-    mean, variance = tf.nn.moments(conv_conv, [0, 1, 2])
-    conv_batch = tf.nn.batch_normalization(conv_conv, mean, variance, offset, scale, 1e-10)
-    return tf.nn.sigmoid(conv_batch)
+def BN_ReLU_Conv(in_img, weight, biases, dimension, strides=1, active="relu"):
+    img = Batch_Normalization(in_img, dimension)
+    if active == "sigmoid":
+        active_img = tf.nn.sigmoid(img)
+    else:
+        active_img = tf.nn.relu(img)
+    return tf.nn.conv2d(active_img, weight, strides=[1, strides, strides, 1], padding='SAME') + biases
+
+
+# 定义卷积，卷积后尺寸不变
+def Conv_BN_Relu(in_img, weight, biases, dimension, strides=1, active="relu"):
+    img = tf.nn.conv2d(in_img, weight, strides=[1, strides, strides, 1], padding='SAME') + biases
+    img = Batch_Normalization(img, dimension)
+    if active == "sigmoid":
+        return tf.nn.sigmoid(img)
+    else:
+        return tf.nn.relu(img)
 
 
 # 池化，大小k*k
 def max_pool(x, k_size=(2, 2), stride=(2, 2)):
     return tf.nn.max_pool(x, ksize=[1, k_size[0], k_size[1], 1],
+                          strides=[1, stride[0], stride[1], 1], padding='VALID')
+
+
+def ave_pool(x, k_size=(2, 2), stride=(2, 2)):
+    return tf.nn.avg_pool(x, ksize=[1, k_size[0], k_size[1], 1],
                           strides=[1, stride[0], stride[1], 1], padding='VALID')
 
 
@@ -38,7 +63,7 @@ def Bit_count(A, B):
     return count
 
 
-def XNOR_convolutional(img, weight, batch_size, strides=1):
+def XNOR_convolutional(img, weight, strides=1):
     w, h, in_channel, out_channel = weight.get_shape().as_list()
     _, w_in, h_in, img_channel = img.get_shape().as_list()
     pad_w = math.ceil((w_in/strides-1)*strides + w - w_in)   # math.ceil  向上取整
@@ -46,28 +71,31 @@ def XNOR_convolutional(img, weight, batch_size, strides=1):
     assert in_channel == img_channel
     conv_img = img
     batch_list = []
-    for ii in range(batch_size):
-        output_list = []
-        for pp in range(out_channel):
-            sum_img = []
-            for qq in range(in_channel):
-                each_img = []
-                for jj in range(0, w_in, strides):
-                    for kk in range(0, h_in, strides):
-                        if w == 1:
-                            padding = conv_img[ii, :, :, qq]
-                        else:
-                            print(ii, pp, qq, jj, kk, int(pad_w/2), int(pad_w-int(pad_w/2)))
-                            padding = tf.pad(conv_img[ii, :, :, qq], paddings=[[int(pad_w/2), int(pad_w-int(pad_w/2))], [int(pad_h/2), int(pad_h-int(pad_h/2))]])
-                        B = Bit_count(padding[jj:jj + w, kk:kk + h], weight[:, :, qq, pp])
-                        each_img.append(B)
-                sum_img.append(each_img)
-            output_list.append(tf.reduce_sum(sum_img, 0))
-        batch_list.append(output_list)
-    con_out = tf.stack(batch_list)                          # [batch_size, out_size, weight, height]
-    reshape_out = tf.reshape(con_out, [batch_size,  out_channel, w_in, h_in])
-    out_img = tf.transpose(reshape_out, perm=[0, 2, 3, 1])   # 转置为标准维度顺序[batch_size, weight, height , out_channel]
-    return out_img
+    conv_out = tf.nn.conv2d(img, weight, strides=[1, strides, strides, 1], padding='SAME')
+    conv_conv = tf.div(tf.add(conv_out, tf.ones_like(conv_out) * (w**2)), 2)
+    # for ii in range(batch_size):
+    #     output_list = []
+    #     for pp in range(out_channel):
+    #         sum_img = []
+    #         for qq in range(in_channel):
+    #             each_img = []
+    #             for jj in range(0, w_in, strides):
+    #                 for kk in range(0, h_in, strides):
+    #                     print(pp, qq, jj, kk)
+    #                     if w == 1:
+    #                         padding = conv_img[ii, :, :, qq]
+    #                     else:
+    #                         # print(ii, pp, qq, jj, kk, int(pad_w/2), int(pad_w-int(pad_w/2)))
+    #                         padding = tf.pad(conv_img[ii, :, :, qq], paddings=[[int(pad_w/2), int(pad_w-int(pad_w/2))], [int(pad_h/2), int(pad_h-int(pad_h/2))]])
+    #                     B = Bit_count(padding[jj:jj + w, kk:kk + h], weight[:, :, qq, pp])
+    #                     each_img.append(B)
+    #             sum_img.append(each_img)
+    #         output_list.append(tf.reduce_sum(sum_img, 0))
+    #     batch_list.append(output_list)
+    # con_out = tf.stack(batch_list)                          # [batch_size, out_size, weight, height]
+    # reshape_out = tf.reshape(con_out, [batch_size,  out_channel, w_in, h_in])
+    # out_img = tf.transpose(reshape_out, perm=[0, 2, 3, 1])   # 转置为标准维度顺序[batch_size, weight, height , out_channel]
+    return conv_conv
 
 
 def XNOR_Active(img, weight, strides=1):   # img [batch_size, w, h, channel]

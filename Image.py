@@ -28,7 +28,7 @@ def HIST(im, direction="weight"):
         return print("dir is wrong")
 
 
-def plot_images(images, labels, show_color=None):
+def plot_images(images, labels, show_color="gray"):
     """
     将一个batch图片输出
         输入images: [batch_size, weight, height](GRAY) or [batch_size, weight, height, 3](RGB)

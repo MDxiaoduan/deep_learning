@@ -4,8 +4,9 @@ import numpy as np
 
 def Batch_Normalization(batch_data, gamma=1, beta=0):
     mean = np.mean(batch_data)
+    std = np.std(batch_data)
     # Use adjusted standard deviation here, in case the std == 0.
-    std = np.max([np.std(batch_data), 1.0/np.sqrt(batch_data.shape[1]*batch_data.shape[2]*batch_data.shape[3])])
+    # std = np.max([np.std(batch_data), 1.0/np.sqrt(batch_data.shape[1]*batch_data.shape[2]*batch_data.shape[3])])
     batch_norm_data = (batch_data - mean) / std
     return gamma*batch_norm_data + beta
 
@@ -128,6 +129,14 @@ def one_hot(batch_label, class_num):            # label 是batch  class_num 是�
     out_label = np.zeros((length, class_num))
     for kk in range(length):
         out_label[kk, Class_list.index(int(batch_label[kk]))] = 1.0
+    return out_label
+
+
+def one_hot_to_index(batch_label):
+    batch_size, class_num = batch_label.shape
+    out_label = []
+    for kk in range(batch_size):
+        out_label.append(np.argmax(batch_label[kk]))
     return out_label
 
 

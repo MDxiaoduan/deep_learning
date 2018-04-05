@@ -39,9 +39,24 @@ def list_save(content, filename, mode='a'):
         os.remove(filename)
     file = open(filename, mode)
     for i in range(len(content)):
-        file.write(str(content[i]))
+        file.write(str(content[i]) + '\n')
     file.close()
 
+
+def text_read(filename):
+    # Try to read a txt file and return a list.Return [] if there was a mistake.
+    try:
+        file = open(filename, 'r')
+    except IOError:
+        error = []
+        return error
+    content = file.readlines()
+
+    for i in range(len(content)):
+        content[i] = content[i][:len(content[i])-1]
+
+    file.close()
+    return content
 
 def Bin_img(x):
     if x < 0:
@@ -76,3 +91,28 @@ def find_near(x, vec):   # 找到vec中和x最近的数
     for tx in vec:
         diff.append(abs(tx - x))
     return vec[np.argmin(diff)]
+
+# ------------------------------------------------------------------------------------------------
+from moviepy.editor import VideoClip, ImageSequenceClip
+from moviepy.video.io.bindings import mplfig_to_npimage
+from moviepy.editor import VideoFileClip
+from moviepy.video.VideoClip import ImageClip
+
+
+def gen_gif(imgs_path, save_path, fps):
+    '''  把一串连续的图片保存为gif动图
+    :param imgs_path: 图片路径  ,比如"G:\\UCLA\\png"
+    :param save_path: 保存的gif路径（包括文件名.gif） ,比如"G:\\UCLA\\ucla.gif"
+    :param fps: 以多少副图片保存一帧
+    :return: 一个gif图片，在save_path文件夹下
+    '''
+
+    image_list = []
+    for im in os.listdir(imgs_path):
+        image_list.append(os.path.join(imgs_path, im))
+
+    clip = ImageSequenceClip(image_list, fps=fps)
+    clip.write_gif(save_path, fps=fps)
+# ------------------------------------------------------------------------------------------------
+# 把一个列表元素全变为int类型
+int_fun = lambda x_list: [int(x) for x in x_list]

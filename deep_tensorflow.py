@@ -21,8 +21,11 @@ def BN_ReLU_Conv(in_img, weight, biases, dimension, strides=1, active="relu"):
 
 
 # 定义卷积，卷积后尺寸不变
-def Conv_BN_Relu(in_img, weight, biases, dimension, strides=1, active="relu"):
-    img = tf.nn.conv2d(in_img, weight, strides=[1, strides, strides, 1], padding='SAME') + biases
+def Conv_BN_Relu(in_img, weight, dimension, biases=None, strides=1, active="relu", padding='SAME'):
+    if biases is None:
+        img = tf.nn.conv2d(in_img, weight, strides=[1, strides, strides, 1], padding=padding)
+    else:
+        img = tf.nn.conv2d(in_img, weight, strides=[1, strides, strides, 1], padding=padding) + biases
     img = Batch_Normalization(img, dimension)
     if active == "sigmoid":
         return tf.nn.sigmoid(img)
@@ -31,14 +34,14 @@ def Conv_BN_Relu(in_img, weight, biases, dimension, strides=1, active="relu"):
 
 
 # 池化，大小k*k
-def max_pool(x, k_size=(2, 2), stride=(2, 2)):
+def max_pool(x, k_size=(2, 2), stride=(2, 2), pad = 'VALID'):
     return tf.nn.max_pool(x, ksize=[1, k_size[0], k_size[1], 1],
-                          strides=[1, stride[0], stride[1], 1], padding='VALID')
+                          strides=[1, stride[0], stride[1], 1], padding=pad)
 
 
-def ave_pool(x, k_size=(2, 2), stride=(2, 2)):
+def ave_pool(x, k_size=(2, 2), stride=(2, 2), pad = 'VALID'):
     return tf.nn.avg_pool(x, ksize=[1, k_size[0], k_size[1], 1],
-                          strides=[1, stride[0], stride[1], 1], padding='VALID')
+                          strides=[1, stride[0], stride[1], 1], padding=pad)
 
 
 def Bin_conv(img, weight, strides=1):

@@ -2,30 +2,7 @@ from DeepLearning.python import *
 import matplotlib.pyplot as plt
 import math
 import cv2
-
-def HIST(im, direction="weight"):
-    """
-    计算图像x或y方向的像素累加值并归一化到255
-    """
-    h = im.shape[0]
-    w = im.shape[1]
-    # print(h, w)
-    if direction == "weight":    # 向图片宽的方向轴投影
-        x = np.zeros((1, w))
-        y = np.zeros((1, w))
-        for i in range(w):
-            x[0, i] = i
-            y[0, i] = sum(im[:, i])  # y方向相加
-        return x, Norm(y) * 255
-    elif direction == "height":
-        x = np.zeros((1, h))
-        y = np.zeros((1, h))
-        for i in range(h):
-            y[0, i] = i
-            x[0, i] = sum(im[i, :])  # x方向相加
-        return Norm(x) * 255, y
-    else:
-        return print("dir is wrong")
+import random
 
 
 def plot_images(images, labels=None, show_color="gray"):
@@ -88,7 +65,7 @@ plt.style.available
 matplotlib.style.use('seaborn-darkgrid')
 
 
-def plot_learning_curves(fig_path, n_epochs, data_list, name,  color_list, title, xlabel='iter', ylabel='Acc', style=''):
+def plot_learning_curves(fig_path, data_list, name,  color_list, title, xlabel='iter', ylabel='Acc', linestyle='-', marker=None, style=''):
     """
     :param fig_path: 图片保存位置（包括文件名）
     :param n_epochs: 数据长度
@@ -99,6 +76,8 @@ def plot_learning_curves(fig_path, n_epochs, data_list, name,  color_list, title
     :param xlabel: x坐标名称
     :param ylabel：y坐标名称
     :param style: ...
+    :param linestyle: 画的线的格式 可以是直线 ‘-’  虚线： ‘--’
+    :param marker:    每个点标记 可以是圆圈： ‘o’，默认是None
     :return:
     """
     if color_list is None:
@@ -116,11 +95,12 @@ def plot_learning_curves(fig_path, n_epochs, data_list, name,  color_list, title
     plt.rcParams['legend.fontsize'] = 10
     plt.rcParams['figure.titlesize'] = 12
 
+    n_epochs = len(data_list[0])
     steps = range(1, n_epochs + 1)
     plt.title(title + style)
     for ii in range(len(data_list)):
         assert ii < len(color_list)
-        plt.plot(steps, data_list[ii], linewidth=1, color=color_list[ii], linestyle='-', marker='o',
+        plt.plot(steps, data_list[ii], linewidth=1, color=color_list[ii], linestyle=linestyle, marker=marker,
                  markeredgecolor='black',
                  markeredgewidth=0.5, label=name[ii])
 
@@ -201,3 +181,56 @@ def video_to_png(video_path, out_path, step):
         i += 1
 
     cap.release()
+
+# ----------------------------------------------------------------------------------------------------
+def plot_scatter(fig_path, data_list, label_list,  color_list, title, xlabel='iter', ylabel='Acc', style='', alpha=0.3):
+    """
+    :param fig_path: 图片保存位置（包括文件名）
+    :param data_list: 数据列表，可以是多个数据，但是每个数据长度必须一样, [[数据集1], [数据集2]， ...]
+    :param label_list: 每个数据的名称 也是一个列表
+    :param color_list: 每个数据对应颜色列表,可以选：['dodgerblue', 'red', 'aqua', 'orange']
+    :param title: 图形标题
+    :param xlabel: x坐标名称
+    :param ylabel：y坐标名称
+    :param style: ...
+    :return:
+    """
+    fig, ax = plt.subplots()
+    steps = range(1, len(data_list[0]) + 1)
+
+    for index, data in enumerate(data_list):
+        scale = 200.0 * random.random()
+        ax.scatter(steps, data, c=color_list[index], s=scale, label=label_list[index],
+                   alpha=alpha, edgecolors='none')
+
+    ax.legend()
+    ax.grid(True)
+    plt.title(title + style)
+    plt.legend(loc='best', numpoints=1, fancybox=True)
+    plt.savefig(fig_path)  # 这一句要在plt.show()之前
+
+    plt.show()
+
+
+# ------------------------------------------------------------------------------------------------
+from moviepy.editor import VideoClip, ImageSequenceClip
+from moviepy.video.io.bindings import mplfig_to_npimage
+from moviepy.editor import VideoFileClip
+from moviepy.video.VideoClip import ImageClip
+
+
+def gen_gif(imgs_path, save_path, fps):
+    '''  把一串连续的图片保存为gif动图
+    :param imgs_path: 图片路径  ,比如"G:\\UCLA\\png"
+    :param save_path: 保存的gif路径（包括文件名.gif） ,比如"G:\\UCLA\\ucla.gif"
+    :param fps: 以多少副图片保存一帧
+    :return: 一个gif图片，在save_path文件夹下
+    '''
+
+    image_list = []
+    for im in os.listdir(imgs_path):
+        image_list.append(os.path.join(imgs_path, im))
+
+    clip = ImageSequenceClip(image_list, fps=fps)
+    clip.write_gif(save_path, fps=fps)
+# ------------------------------------------------------------------------------------------------
